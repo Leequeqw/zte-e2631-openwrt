@@ -32,8 +32,9 @@ jobs:
       - name: Build matching ucode socket package
         run: |
           set -euo pipefail
-          "$E2631_TREE/scripts/config" --file "$E2631_TREE/.config" --enable PACKAGE_ucode-mod-socket
+          printf '\nCONFIG_PACKAGE_ucode-mod-socket=y\n' >> "$E2631_TREE/.config"
           make -C "$E2631_TREE" defconfig
+          grep -q '^CONFIG_PACKAGE_ucode-mod-socket=y' "$E2631_TREE/.config"
           make -C "$E2631_TREE" -j"$(nproc)" package/utils/ucode/compile V=s
       - name: Collect dependency verification bundle
         run: |
