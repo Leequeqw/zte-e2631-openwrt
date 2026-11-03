@@ -35,6 +35,8 @@ jobs:
           printf '\nCONFIG_PACKAGE_ucode-mod-socket=y\n' >> "$E2631_TREE/.config"
           make -C "$E2631_TREE" defconfig
           grep -q '^CONFIG_PACKAGE_ucode-mod-socket=y' "$E2631_TREE/.config"
+          make -C "$E2631_TREE" -j"$(nproc)" tools/install V=s
+          make -C "$E2631_TREE" -j"$(nproc)" toolchain/install V=s
           make -C "$E2631_TREE" -j"$(nproc)" package/utils/ucode/compile V=s
       - name: Collect dependency verification bundle
         run: |
