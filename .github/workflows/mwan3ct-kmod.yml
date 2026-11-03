@@ -1,4 +1,4 @@
-name: Build E2631 mwan3 dependencies
+name: Build E2631 ucode socket dependency
 
 on:
   push:
@@ -29,28 +29,23 @@ jobs:
         run: |
           make check
           make bootstrap
-          grep -q '^CONFIG_PACKAGE_kmod-nf-conntrack-netlink=m' "$E2631_TREE/.config"
-      - name: Build matching firmware tree and module package
-        run: bash scripts/build.sh --no-pack
+      - name: Build matching ucode socket package
+        run: |
+          set -euo pipefail
+          "$E2631_TREE/scripts/config" --file "$E2631_TREE/.config" --enable PACKAGE_ucode-mod-socket
+          make -C "$E2631_TREE" defconfig
+          make -C "$E2631_TREE" -j"$(nproc)" package/utils/ucode/compile V=s
       - name: Collect dependency verification bundle
         run: |
           set -euo pipefail
-          mkdir -p mwan3ct-kmod
-          find "$E2631_TREE/bin" -type f -name 'kmod-nf-conntrack-netlink*.apk' -exec cp '{}' mwan3ct-kmod/ \;
-          find "$E2631_TREE/bin" -type f -name 'ucode-mod-socket*.apk' -exec cp '{}' mwan3ct-kmod/ \;
-          find "$E2631_TREE/build_dir" -type f -name 'nf_conntrack_netlink.ko' -exec cp '{}' mwan3ct-kmod/ \;
-          find "$E2631_TREE/build_dir" -type f -path '*/linux-sanechips_generic/linux-6.18.55/.config' -exec cp '{}' mwan3ct-kmod/kernel.config \;
-          find "$E2631_TREE/build_dir" -type f -path '*/linux-sanechips_generic/linux-6.18.55/Module.symvers' -exec cp '{}' mwan3ct-kmod/Module.symvers \;
-          test "$(find mwan3ct-kmod -maxdepth 1 -name 'kmod-nf-conntrack-netlink*.apk' | wc -l)" -eq 1
-          test "$(find mwan3ct-kmod -maxdepth 1 -name 'ucode-mod-socket*.apk' | wc -l)" -eq 1
-          test -f mwan3ct-kmod/nf_conntrack_netlink.ko
-          test -f mwan3ct-kmod/kernel.config
-          test -f mwan3ct-kmod/Module.symvers
-          printf 'kit=%s\nbase=%s\n' "$GITHUB_SHA" "$(git -C "$E2631_TREE" rev-parse HEAD)" > mwan3ct-kmod/SOURCE-INFO.txt
-          (cd mwan3ct-kmod && sha256sum * > SHA256SUMS)
+          mkdir -p ucode-socket
+          find "$E2631_TREE/bin" -type f -name 'ucode-mod-socket*.apk' -exec cp '{}' ucode-socket/ \;
+          test "$(find ucode-socket -maxdepth 1 -name 'ucode-mod-socket*.apk' | wc -l)" -eq 1
+          printf 'kit=%s\nbase=%s\n' "$GITHUB_SHA" "$(git -C "$E2631_TREE" rev-parse HEAD)" > ucode-socket/SOURCE-INFO.txt
+          (cd ucode-socket && sha256sum * > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: e2631-mwan3ct-kmod-${{ github.run_id }}
-          path: mwan3ct-kmod/
+          name: e2631-ucode-socket-${{ github.run_id }}
+          path: ucode-socket/
           if-no-files-found: error
           retention-days: 7
