@@ -1,4 +1,4 @@
-name: Build E2631 mwan3ct kernel dependency
+name: Build E2631 mwan3 dependencies
 
 on:
   push:
@@ -32,15 +32,17 @@ jobs:
           grep -q '^CONFIG_PACKAGE_kmod-nf-conntrack-netlink=m' "$E2631_TREE/.config"
       - name: Build matching firmware tree and module package
         run: bash scripts/build.sh --no-pack
-      - name: Collect module verification bundle
+      - name: Collect dependency verification bundle
         run: |
           set -euo pipefail
           mkdir -p mwan3ct-kmod
           find "$E2631_TREE/bin" -type f -name 'kmod-nf-conntrack-netlink*.apk' -exec cp '{}' mwan3ct-kmod/ \;
+          find "$E2631_TREE/bin" -type f -name 'ucode-mod-socket*.apk' -exec cp '{}' mwan3ct-kmod/ \;
           find "$E2631_TREE/build_dir" -type f -name 'nf_conntrack_netlink.ko' -exec cp '{}' mwan3ct-kmod/ \;
           find "$E2631_TREE/build_dir" -type f -path '*/linux-sanechips_generic/linux-6.18.55/.config' -exec cp '{}' mwan3ct-kmod/kernel.config \;
           find "$E2631_TREE/build_dir" -type f -path '*/linux-sanechips_generic/linux-6.18.55/Module.symvers' -exec cp '{}' mwan3ct-kmod/Module.symvers \;
           test "$(find mwan3ct-kmod -maxdepth 1 -name 'kmod-nf-conntrack-netlink*.apk' | wc -l)" -eq 1
+          test "$(find mwan3ct-kmod -maxdepth 1 -name 'ucode-mod-socket*.apk' | wc -l)" -eq 1
           test -f mwan3ct-kmod/nf_conntrack_netlink.ko
           test -f mwan3ct-kmod/kernel.config
           test -f mwan3ct-kmod/Module.symvers
